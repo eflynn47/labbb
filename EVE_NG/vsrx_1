@@ -1,0 +1,70 @@
+#
+set system root-authentication plain-text-password 
+  #kbranetadmin1
+set chassis cluster cluster-id 1 node 0 reboot
+
+#
+set groups node0 system host-name vsrx-1
+set groups node0 system services ssh root-login allow
+set groups node0 interfaces fxp0 unit 0 family inet address 10.10.10.1/24
+set groups node1 system host-name vsrx-2
+set groups node1 system services ssh root-login allow
+set groups node1 interfaces fxp0 unit 0 family inet address 10.10.10.2/24
+set apply-groups "${node}"
+#
+set interface fab0 fabric-options member-interfaces ge-0/0/3
+set interface fab0 fabric-options member-interfaces ge-0/0/4
+set interface fab1 fabric-options member-interfaces ge-7/0/3
+set interface fab1 fabric-options member-interfaces ge-7/0/4
+##
+#redundancy group for the control plane
+set chassis cluster redundancy-group 0 node 0 priority 200  
+set chassis cluster redundancy-group 0 node 1 priority 100
+
+#redundancy group for the data plane (interfaces)
+set chassis cluster reth-count 2
+set chassis cluster redundancy-group 1 node 0 priority 200
+set chassis cluster redundancy-group 1 node 1 priority 100
+set chassis cluster redundancy-group 1 preempt
+set chassis cluster redundancy-group 2 node 0 priority 100
+set chassis cluster redundancy-group 2 node 1 priority 200
+set chassis cluster redundancy-group 2 preempt
+
+#create reth interfaces
+set interfaces reth0 redundant-ether-options redundancy-group 1
+set interfaces ge-0/0/0 gigether-options redundant-parent reth0
+set interfaces ge-7/0/0 gigether-options redundant-parent reth0
+set interfaces reth1 redundant-ether-options redundancy-group 2
+set interfaces ge-0/0/1 gigether-options redundant-parent reth1
+set interfaces ge-7/0/1 gigether-options redundant-parent reth1
+
+#configure rg failover
+set chassis cluster redundancy-group 1 interface-monitor ge-0/0/0 weight 255 
+set chassis cluster redundancy-group 1 interface-monitor ge-7/0/0 weight 255 
+set chassis cluster redundancy-group 2 interface-monitor ge-0/0/1 weight 255 
+set chassis cluster redundancy-group 2 interface-monitor ge-7/0/1 weight 255
+set chassis cluster control-link-recovery
+
+#configure reth interfaces
+set interfaces reth0 vlan-tagging
+set interfaces reth0 unit 901 description P2P-1
+set interfaces reth0 unit 901 vlan-id 901
+set interfaces reth0 unit 901 family inet address 192.168.1.1/30
+
+set interfaces reth1 vlan-tagging
+set interfaces reth1 unit 902 description P2P-2
+set interfaces reth1 unit 902 vlan-id 902
+set interfaces reth1 unit 902 family inet address 192.168.2.1/30
+
+#LACP
+set interfaces reth0 redundant-ether-options lacp active
+set interfaces reth0 redundant-ether-options lacp periodic fast
+set interfaces reth1 redundant-ether-options lacp active
+set interfaces reth1 redundant-ether-options lacp periodic fast
+
+#security zones
+set security zones security-zone trust interfaces reth0.901     
+set security zones security-zone trust interfaces reth1.902
+set security zones security-zone trust host-inbound-traffic system-services all 
+
+

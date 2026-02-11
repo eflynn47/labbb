@@ -1,0 +1,74 @@
+#
+license boot level network-advantage addon dna-advantage
+
+
+#
+vlan 10
+ name user
+vlan 901
+ name P2P-Node0
+vlan 902
+ name P2P-Node1
+!
+interface vlan 10
+ ip address 10.1.1.1 255.255.255.0
+ no shutdown
+!
+interface vlan 901
+ ip address 192.168.1.2 255.255.255.252
+ no shutdown
+!
+interface vlan 902
+ ip address 192.168.2.2 255.255.255.252
+ no shutdown
+!
+interface GigabitEthernet1/0/1
+ description Link to SRX300 HA node0-reth0
+ channel-group 1 mode active
+ no shutdown
+interface GigabitEthernet1/0/2
+ description Link to SRX300 HA node1-reth0
+ channel-group 2 mode active
+ no shutdown
+!
+interface Port-channel1
+ description LAG to SRX300 HA node0
+ switchport mode trunk
+ switchport trunk allowed vlan 901
+ no shutdown
+!
+interface Port-channel2
+ description LAG to SRX300 HA node1
+ switchport mode trunk
+ switchport trunk allowed vlan 901
+ no shutdown
+!
+!
+interface GigabitEthernet1/0/3
+ description Link to SRX300 HA node0-reth1
+ channel-group 3 mode active
+ no shutdown
+interface GigabitEthernet1/0/4
+ description Link to SRX300 HA node1-reth1
+ channel-group 4 mode active
+ no shutdown
+!
+interface Port-channel3
+ description LAG to SRX300 HA node0
+ switchport mode trunk
+ switchport trunk allowed vlan 902
+ no shutdown
+!
+interface Port-channel4
+ description LAG to SRX300 HA node1
+ switchport mode trunk
+ switchport trunk allowed vlan 902
+ no shutdown
+
+!######
+!
+interface GigabitEthernet1/0/6
+ switchport access vlan 10
+ switchport mode access
+ no shutdown
+!
