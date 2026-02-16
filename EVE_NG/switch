@@ -72,3 +72,28 @@ interface GigabitEthernet1/0/6
  switchport mode access
  no shutdown
 !
+!
+ip routing
+!
+
+## reconfigure switch for L3 uplinks
+
+interface Port-channel1
+ no switchport trunk allowed vlan 901
+ switchport mode access
+ switchport access vlan 901
+ !
+ interface Port-channel2
+ no switchport trunk allowed vlan 901
+ switchport mode access
+ switchport access vlan 901
+!
+interface Port-channel3
+ no switchport trunk allowed vlan 902
+ switchport mode access
+ switchport access vlan 902
+!
+interface Port-channel4
+ no switchport trunk allowed vlan 902
+ switchport mode access
+ switchport access vlan 902
