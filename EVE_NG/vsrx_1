@@ -67,4 +67,25 @@ set security zones security-zone trust interfaces reth0.901
 set security zones security-zone trust interfaces reth1.902
 set security zones security-zone trust host-inbound-traffic system-services all 
 
+#re-configure reth interfaces for L3
+delete interfaces reth0 vlan-tagging
+delete security zones security-zone trust interfaces reth0.901  
+delete interfaces reth0 unit 901  
+set interfaces reth0 unit 0 description P2P-2
+set interfaces reth0 unit 0 family inet address 192.168.1.1/30
+set security zones security-zone trust interfaces reth0.0  
 
+delete interfaces reth1 vlan-tagging
+delete security zones security-zone trust interfaces reth1.902  
+delete interfaces reth1 unit 902  
+set interfaces reth1 unit 0 description P2P-2
+set interfaces reth1 unit 0 family inet address 192.168.2.1/30
+set security zones security-zone trust interfaces reth1.0  
+
+#configure routing instances
+
+
+#configure ospf
+# set protocols ospf area 0.0.0.0 interface ge-0/0/0
+# set protocols ospf area 0.0.0.0 interface ge-0/0/1
+# set protocols ospf router-id 192.168.1.1
