@@ -1,3 +1,4 @@
+#!
 delete interfaces reth0 redundant-ether-options lacp active
 delete interfaces reth0 redundant-ether-options lacp periodic fast
 delete interfaces reth1 redundant-ether-options lacp active
