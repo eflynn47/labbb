@@ -1,4 +1,4 @@
-#
+#!
 set system root-authentication plain-text-password 
   #kbranetadmin1
 set chassis cluster cluster-id 1 node 0 reboot

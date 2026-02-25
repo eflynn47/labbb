@@ -1,0 +1,3 @@
+#!
+set system root-authentication plain-text-password 
+  #kbranetadmin1
