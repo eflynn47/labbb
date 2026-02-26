@@ -3,66 +3,68 @@ license boot level network-advantage addon dna-advantage
 
 
 #
+ip routing
+!
 vlan 10
  name user
-vlan 901
- name P2P-Node0
-vlan 902
- name P2P-Node1
+vlan 800
+ name P2P-reth0
+vlan 801
+ name P2P-reth1
 !
 interface vlan 10
  ip address 10.1.1.1 255.255.255.0
  no shutdown
 !
-interface vlan 901
- ip address 192.168.1.2 255.255.255.252
+interface vlan 800
+ ip address 10.50.120.1 255.255.255.252
  no shutdown
 !
-interface vlan 902
- ip address 192.168.2.2 255.255.255.252
+interface vlan 801
+ ip address 10.50.120.5 255.255.255.252
  no shutdown
 !
 interface GigabitEthernet1/0/1
- description Link to SRX300 HA node0-reth0
+ description Link to SRX HA node0-reth0
  channel-group 1 mode active
  no shutdown
 interface GigabitEthernet1/0/2
- description Link to SRX300 HA node1-reth0
+ description Link to SRX HA node1-reth0
  channel-group 2 mode active
  no shutdown
 !
 interface Port-channel1
- description LAG to SRX300 HA node0
- switchport mode trunk
- switchport trunk allowed vlan 901
+ description LAG to SRX HA node0-reth0
+ switchport mode access
+ switchport access vlan 800
  no shutdown
 !
 interface Port-channel2
- description LAG to SRX300 HA node1
- switchport mode trunk
- switchport trunk allowed vlan 901
+ description LAG to SRX HA node1-reth0
+ switchport mode access
+ switchport access vlan 800
  no shutdown
 !
 !
 interface GigabitEthernet1/0/3
  description Link to SRX300 HA node0-reth1
- channel-group 3 mode active
+ channel-group 11 mode active
  no shutdown
 interface GigabitEthernet1/0/4
  description Link to SRX300 HA node1-reth1
- channel-group 4 mode active
+ channel-group 12 mode active
  no shutdown
 !
-interface Port-channel3
- description LAG to SRX300 HA node0
- switchport mode trunk
- switchport trunk allowed vlan 902
+interface Port-channel11
+ description LAG to SRX300 HA node0-reth1
+ switchport mode access
+ switchport access vlan 801
  no shutdown
 !
-interface Port-channel4
- description LAG to SRX300 HA node1
- switchport mode trunk
- switchport trunk allowed vlan 902
+interface Port-channel12
+ description LAG to SRX300 HA node1-reth1
+ switchport mode access
+ switchport access vlan 801
  no shutdown
 
 !######
@@ -73,27 +75,5 @@ interface GigabitEthernet1/0/6
  no shutdown
 !
 !
-ip routing
-!
 
-## reconfigure switch for L3 uplinks
 
-interface Port-channel1
- no switchport trunk allowed vlan 901
- switchport mode access
- switchport access vlan 901
- !
- interface Port-channel2
- no switchport trunk allowed vlan 901
- switchport mode access
- switchport access vlan 901
-!
-interface Port-channel3
- no switchport trunk allowed vlan 902
- switchport mode access
- switchport access vlan 902
-!
-interface Port-channel4
- no switchport trunk allowed vlan 902
- switchport mode access
- switchport access vlan 902

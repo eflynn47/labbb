@@ -18,7 +18,7 @@ set security ike gateway secondary-gw ike-policy phase1-policy address 2.2.2.2 e
 set security ipsec policy phase2-policy proposal-set standard
 set security ipsec vpn primary-vpn bind-interface st0.0 ike gateway primary-gw ipsec-policy phase2-policy
 set security ipsec vpn primary-vpn bind-interface st0.0 establish-tunnels immediately
-set security ipsec vpn secondary-vpn bind-interface st0.1 ike gateway primary-gw ipsec-policy phase2-policy
+set security ipsec vpn secondary-vpn bind-interface st0.1 ike gateway secondary-gw ipsec-policy phase2-policy
 set security ipsec vpn secondary-vpn bind-interface st0.1 establish-tunnels immediately
 
 set security zones security-zone trust interfaces st0.0
