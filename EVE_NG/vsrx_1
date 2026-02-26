@@ -82,8 +82,57 @@ set interfaces reth1 unit 0 description P2P-2
 set interfaces reth1 unit 0 family inet address 192.168.2.1/30
 set security zones security-zone trust interfaces reth1.0  
 
-#configure routing instances
+#new ISP security zones
+set security zones security-zone ISP1-untrust screen untrust-screen
+set security zones security-zone ISP1-untrust host-inbound-traffic system-services all
+set security zones security-zone ISP2-untrust screen untrust-screen
+set security zones security-zone ISP2-untrust host-inbound-traffic system-services all
 
+set security policies from-zone trust to-zone ISP1-untrust policy default-permit match source-address any
+set security policies from-zone trust to-zone ISP1-untrust policy default-permit match destination-address any
+set security policies from-zone trust to-zone ISP1-untrust policy default-permit match application any
+set security policies from-zone trust to-zone ISP1-untrust policy default-permit then permit
+set security policies from-zone trust to-zone ISP2-untrust policy default-permit match source-address any
+set security policies from-zone trust to-zone ISP2-untrust policy default-permit match destination-address any
+set security policies from-zone trust to-zone ISP2-untrust policy default-permit match application any
+set security policies from-zone trust to-zone ISP2-untrust policy default-permit then permit
+
+
+#configure WAN interfaces
+set interfaces ge-0/0/2 unit 0 description ISP-1
+set interfaces ge-0/0/2 unit 0 family inet address 1.1.1.1/24
+set security zones security-zone ISP1-untrust interfaces ge-0/0/2.0
+set interfaces ge-7/0/2 unit 0 description ISP-2
+set interfaces ge-7/0/2 unit 0 family inet address 2.2.2.2/24
+set security zones security-zone ISP2-untrust interfaces ge-7/0/2.0
+
+
+#configure routing instances
+set routing-instances ISP1 instance-type virtual-router
+set routing-instances ISP1 interface ge-0/0/2.0
+set routing-instances ISP1 routing-options static route 3.3.3.0/24 next-hop ge-0/0/2.0
+set routing-instances ISP1 routing-options static route 4.4.4.0/24 next-hop ge-0/0/2.0
+set routing-instances ISP2 instance-type virtual-router
+set routing-instances ISP2 interface ge-7/0/2.0
+set routing-instances ISP2 routing-options static route 3.3.3.0/24 next-hop ge-7/0/2.0
+set routing-instances ISP2 routing-options static route 4.4.4.0/24 next-hop ge-7/0/2.0
+
+#configure tunnels
+set interfaces st0 unit 0 family inet mtu 1500 address 169.254.1.2/30
+set interfaces st0 unit 1 family inet mtu 1500 address 169.254.2.2/30
+
+set security flow tcp-mss ipsec-vpn mss 1350
+set security ike policy phase1-policy mode main proposal-set standard pre-shared-key ascii-text 1234
+set security ike gateway primary-gw ike-policy phase1-policy address 3.3.3.3 external-interface ge-0/0/2.0
+set security ike gateway secondary-gw ike-policy phase1-policy address 3.3.3.3 external-interface ge-7/0/2.0 
+set security ipsec policy phase2-policy proposal-set standard
+set security ipsec vpn primary-vpn bind-interface st0.0 ike gateway primary-gw ipsec-policy phase2-policy
+set security ipsec vpn primary-vpn bind-interface st0.0 establish-tunnels immediately
+set security ipsec vpn secondary-vpn bind-interface st0.1 ike gateway primary-gw ipsec-policy phase2-policy
+set security ipsec vpn secondary-vpn bind-interface st0.1 establish-tunnels immediately
+
+set security zones security-zone trust interfaces st0.0
+set security zones security-zone trust interfaces st0.1
 
 #configure ospf
 # set protocols ospf area 0.0.0.0 interface ge-0/0/0

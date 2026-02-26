@@ -1,3 +1,25 @@
 #!
 set system root-authentication plain-text-password 
   #kbranetadmin1
+
+set routing-options static route 1.1.1.0/24 next-hop ge-0/0/1.0
+set routing-options static route 2.2.2.0/24 next-hop ge-0/0/1.0
+set routing-options static route 5.5.5.0/24 next-hop ge-0/0/1.0
+set routing-options static route 9.9.9.0/24 next-hop ge-0/0/1.0
+
+
+set interfaces st0 unit 0 family inet mtu 1500 address 169.254.1.1/30
+set interfaces st0 unit 1 family inet mtu 1500 address 169.254.2.1/30
+
+set security flow tcp-mss ipsec-vpn mss 1350
+set security ike policy phase1-policy mode main proposal-set standard pre-shared-key ascii-text 1234
+set security ike gateway primary-gw ike-policy phase1-policy address 1.1.1.1 external-interface ge-0/0/1.0
+set security ike gateway secondary-gw ike-policy phase1-policy address 2.2.2.2 external-interface ge-0/0/1.0 
+set security ipsec policy phase2-policy proposal-set standard
+set security ipsec vpn primary-vpn bind-interface st0.0 ike gateway primary-gw ipsec-policy phase2-policy
+set security ipsec vpn primary-vpn bind-interface st0.0 establish-tunnels immediately
+set security ipsec vpn secondary-vpn bind-interface st0.1 ike gateway primary-gw ipsec-policy phase2-policy
+set security ipsec vpn secondary-vpn bind-interface st0.1 establish-tunnels immediately
+
+set security zones security-zone trust interfaces st0.0
+set security zones security-zone trust interfaces st0.1
