@@ -99,3 +99,14 @@ interface Port-channel4
  switchport trunk allowed vlan 902
  no shutdown
 !
+
+
+
+delete security policies from-zone ISP1-untrust to-zone trust policy default-permit match source-address any
+delete security policies from-zone ISP1-untrust to-zone trust policy default-permit match destination-address any
+delete security policies from-zone ISP1-untrust to-zone trust policy default-permit match application any
+delete security policies from-zone ISP1-untrust to-zone trust policy default-permit then permit
+delete security policies from-zone ISP2-untrust to-zone trust policy default-permit match source-address any
+delete security policies from-zone ISP2-untrust to-zone trust policy default-permit match destination-address any
+delete security policies from-zone ISP2-untrust to-zone trust policy default-permit match application any
+delete security policies from-zone ISP2-untrust to-zone trust policy default-permit then permit

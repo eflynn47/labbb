@@ -119,6 +119,31 @@ set security zones security-zone trust interfaces lo0.0
 set groups node0 routing-options router-id 10.50.0.5/32
 set groups node1 routing-options router-id 10.50.0.6/32
 
+# #Configure Probes
+# set routing-instances ISP1 routing-options static route 9.9.9.9/32 next-hop 1.1.1.10
+# set routing-instances ISP2 routing-options static route 9.9.9.9/32 next-hop 2.2.2.10
+
+set policy-options policy-statement IMPORT-TO-INET0 term FROM-ISP1 from instance ISP1
+set policy-options policy-statement IMPORT-TO-INET0 term FROM-ISP1 from protocol static
+set policy-options policy-statement IMPORT-TO-INET0 term FROM-ISP1 from route-filter 0.0.0.0/0 exact
+set policy-options policy-statement IMPORT-TO-INET0 term FROM-ISP1 then accept
+set policy-options policy-statement IMPORT-TO-INET0 term FROM-ISP2 from instance ISP2
+set policy-options policy-statement IMPORT-TO-INET0 term FROM-ISP2 from protocol static
+set policy-options policy-statement IMPORT-TO-INET0 term FROM-ISP2 from route-filter 0.0.0.0/0 exact
+set policy-options policy-statement IMPORT-TO-INET0 term FROM-ISP2 then accept
+set policy-options policy-statement IMPORT-TO-INET0 term FINAL then reject
+set routing-options instance-import IMPORT-TO-INET0
+
+#configure source nat
+set security nat source interface enhanced-port-overloading-algorithm
+set security nat source rule-set ISP1 from zone trust
+set security nat source rule-set ISP1 to zone ISP1-untrust
+set security nat source rule-set ISP1 rule OFFICE-ISP1 match source address 10.50.0.0/16
+set security nat source rule-set ISP1 rule OFFICE-ISP1 then source-nat interface
+set security nat source rule-set ISP2 from zone trust
+set security nat source rule-set ISP2 to zone ISP2-untrust
+set security nat source rule-set ISP2 rule OFFICE-ISP2 match source address 10.50.0.0/16
+set security nat source rule-set ISP2 rule OFFICE-ISP2 then source-nat interface
 
 #configure ospf to switch
 # set protocols ospf area 0.0.0.0 interface ge-0/0/0
