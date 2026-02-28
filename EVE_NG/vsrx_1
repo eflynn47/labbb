@@ -99,7 +99,7 @@ set routing-instances ISP2 routing-options static route 0.0.0.0/0 next-hop 2.2.2
 set interfaces st0 unit 0 family inet mtu 1500 address 169.254.1.2/30
 set interfaces st0 unit 1 family inet mtu 1500 address 169.254.2.2/30
 
-set security flow tcp-mss ipsec-vpn mss 1350
+set security flow tcp-mss ipsec-vpn mss 1360
 set security ike policy phase1-policy mode main proposal-set standard pre-shared-key ascii-text 1234
 set security ike gateway primary-gw ike-policy phase1-policy address 3.3.3.3 external-interface ge-0/0/2.0
 set security ike gateway secondary-gw ike-policy phase1-policy address 3.3.3.3 external-interface ge-7/0/2.0 
@@ -149,3 +149,17 @@ set security nat source rule-set ISP2 rule OFFICE-ISP2 then source-nat interface
 # set protocols ospf area 0.0.0.0 interface ge-0/0/0
 # set protocols ospf area 0.0.0.0 interface ge-0/0/1
 # set protocols ospf router-id 192.168.1.1
+
+#configure ospf over tunnels
+set protocols ospf area 0.0.0.0 interface st0.0 priority 1
+set protocols ospf area 0.0.0.0 interface st0.1 priority 1
+set protocols ospf area 0.0.0.0 interface st0.0 metric 100
+set protocols ospf area 0.0.0.0 interface st0.1 metric 100
+
+set interfaces st0 unit 0 family inet mtu 1400
+set interfaces st0 unit 0 point-to-point
+set interfaces st0 unit 1 family inet mtu 1400
+set interfaces st0 unit 1 point-to-point
+set security zones security-zone trust interfaces st0.0 host-inbound-traffic protocols ospf
+set security zones security-zone trust interfaces st0.1 host-inbound-traffic protocols ospf
+
