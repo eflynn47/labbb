@@ -23,3 +23,16 @@ set security ipsec vpn secondary-vpn bind-interface st0.1 establish-tunnels imme
 
 set security zones security-zone trust interfaces st0.0
 set security zones security-zone trust interfaces st0.1
+
+set routing-options static route 0.0.0.0/0 next-hop 3.3.3.10
+set routing-options static route 10.150.0.0/16 next-hop 10.150.1.10
+
+set protocols ospf area 0.0.0.0 interface ge-0/0/0.0 passive
+set protocols ospf area 0.0.0.0 interface st0.0 interface-type p2p
+set protocols ospf area 0.0.0.0 interface st0.1 interface-type p2p
+
+set policy-options policy-statement static-to-ospf term 1 from protocol static
+set policy-options policy-statement static-to-ospf term 1 from route-filter 10.150.0.0/16 exact
+set policy-options policy-statement static-to-ospf term 1 then accept
+set policy-options policy-statement static-to-ospf term FINAL then reject
+set protocols ospf export static-to-ospf

@@ -5,16 +5,10 @@ license boot level network-advantage addon dna-advantage
 #
 ip routing
 !
-vlan 10
- name user
 vlan 800
  name P2P-reth0
 vlan 801
  name P2P-reth1
-!
-interface vlan 10
- ip address 10.1.1.1 255.255.255.0
- no shutdown
 !
 interface vlan 800
  ip address 10.50.120.1 255.255.255.252
