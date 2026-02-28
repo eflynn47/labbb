@@ -101,6 +101,10 @@ interface Port-channel4
 !
 
 
+set security policies from-zone ISP1-untrust to-zone trust policy default-permit match source-address any
+set security policies from-zone ISP1-untrust to-zone trust policy default-permit match destination-address any
+set security policies from-zone ISP1-untrust to-zone trust policy default-permit match application any
+set security policies from-zone ISP1-untrust to-zone trust policy default-permit then permit
 
 delete security policies from-zone ISP1-untrust to-zone trust policy default-permit match source-address any
 delete security policies from-zone ISP1-untrust to-zone trust policy default-permit match destination-address any
@@ -110,3 +114,16 @@ delete security policies from-zone ISP2-untrust to-zone trust policy default-per
 delete security policies from-zone ISP2-untrust to-zone trust policy default-permit match destination-address any
 delete security policies from-zone ISP2-untrust to-zone trust policy default-permit match application any
 delete security policies from-zone ISP2-untrust to-zone trust policy default-permit then permit
+
+set protocols ospf traceoptions file ospf-log
+set protocols ospf traceoptions flag hello
+set protocols ospf traceoptions flag state
+set protocols ospf traceoptions flag packets
+set protocols ospf traceoptions flag error
+
+#Real-time follow: 
+monitor start ospf-log (Press Ctrl+C to stop)
+#View file: 
+show log ospf-log
+#Clear logs: 
+clear log ospf-log 
