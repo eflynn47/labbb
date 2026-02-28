@@ -146,11 +146,6 @@ set security nat source rule-set ISP2 rule OFFICE-ISP2 match source address 10.5
 set security nat source rule-set ISP2 rule OFFICE-ISP2 then source-nat interface
 
 #configure ospf to switch
-<<<<<<< HEAD
-set protocols ospf area 0.0.0.0 interface st0.0 interface-type p2p
-set protocols ospf area 0.0.0.0 interface st0.1 interface-type p2p
-set protocols ospf area 0.0.0.0 interface lo0.0 passive
-=======
 # set protocols ospf area 0.0.0.0 interface ge-0/0/0
 # set protocols ospf area 0.0.0.0 interface ge-0/0/1
 # set protocols ospf router-id 192.168.1.1
@@ -168,4 +163,3 @@ set interfaces st0 unit 1 point-to-point
 set security zones security-zone trust interfaces st0.0 host-inbound-traffic protocols ospf
 set security zones security-zone trust interfaces st0.1 host-inbound-traffic protocols ospf
 
->>>>>>> ekmain
