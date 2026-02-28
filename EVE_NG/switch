@@ -68,6 +68,23 @@ interface GigabitEthernet1/0/6
  switchport mode access
  no shutdown
 !
+interface Loopback0
+ ip address 10.50.0.11 255.255.255.255
 !
 
 
+#ospf
+router ospf 1
+ router-id 10.50.0.11
+ area 50 stub
+ network 10.50.0.0 0.0.255.255 area 50
+ network 172.30.50.0 0.0.0.31 area 50
+!
+interface vlan 800
+ ip ospf 1 area 50
+ ip ospf network point-to-point
+!
+interface vlan 801
+ ip ospf 1 area 50
+ ip ospf network point-to-point
+!
