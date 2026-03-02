@@ -1,0 +1,94 @@
+#!
+license boot level network-advantage addon dna-advantage
+
+
+#
+ip routing
+!
+vlan 800
+ name P2P-reth0
+vlan 801
+ name P2P-reth1
+!
+interface vlan 800
+ ip address 10.50.120.1 255.255.255.252
+ no shutdown
+!
+interface vlan 801
+ ip address 10.50.120.5 255.255.255.252
+ no shutdown
+!
+interface GigabitEthernet1/0/1
+ description Link to SRX HA node0-reth0
+ channel-group 1 mode active
+ no shutdown
+interface GigabitEthernet1/0/2
+ description Link to SRX HA node1-reth0
+ channel-group 2 mode active
+ no shutdown
+!
+interface Port-channel1
+ description LAG to SRX HA node0-reth0
+ switchport mode access
+ switchport access vlan 800
+ no shutdown
+!
+interface Port-channel2
+ description LAG to SRX HA node1-reth0
+ switchport mode access
+ switchport access vlan 800
+ no shutdown
+!
+!
+interface GigabitEthernet1/0/3
+ description Link to SRX300 HA node0-reth1
+ channel-group 11 mode active
+ no shutdown
+interface GigabitEthernet1/0/4
+ description Link to SRX300 HA node1-reth1
+ channel-group 12 mode active
+ no shutdown
+!
+interface Port-channel11
+ description LAG to SRX300 HA node0-reth1
+ switchport mode access
+ switchport access vlan 801
+ no shutdown
+!
+interface Port-channel12
+ description LAG to SRX300 HA node1-reth1
+ switchport mode access
+ switchport access vlan 801
+ no shutdown
+
+!######
+!
+interface GigabitEthernet1/0/6
+ switchport access vlan 10
+ switchport mode access
+ no shutdown
+!
+interface Loopback0
+ ip address 10.50.0.11 255.255.255.255
+!
+
+
+#ospf
+router ospf 1
+ router-id 10.50.0.11
+ area 50 stub
+ network 10.50.0.0 0.0.255.255 area 50
+ network 172.30.50.0 0.0.0.31 area 50
+!
+interface vlan 800
+ ip ospf 1 area 50
+ ip ospf network point-to-point
+!
+interface vlan 801
+ ip ospf 1 area 50
+ ip ospf network point-to-point
+!
+
+#########################
+#remoce stub config
+no area 50 stub
