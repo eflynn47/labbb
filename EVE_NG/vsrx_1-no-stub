@@ -1,0 +1,236 @@
+#!
+set system root-authentication plain-text-password 
+  #kbranetadmin1
+set chassis cluster cluster-id 1 node 0 reboot
+
+#
+set groups node0 system host-name vsrx-1
+set groups node0 system services ssh root-login allow
+set groups node0 interfaces fxp0 unit 0 family inet address 172.30.50.3/27
+set groups node1 system host-name vsrx-2
+set groups node1 system services ssh root-login allow
+set groups node1 interfaces fxp0 unit 0 family inet address 172.30.50.4/27
+set apply-groups "${node}"
+#
+set interface fab0 fabric-options member-interfaces ge-0/0/3
+set interface fab0 fabric-options member-interfaces ge-0/0/4
+set interface fab1 fabric-options member-interfaces ge-7/0/3
+set interface fab1 fabric-options member-interfaces ge-7/0/4
+##
+#redundancy group for the control plane
+set chassis cluster redundancy-group 0 node 0 priority 200  
+set chassis cluster redundancy-group 0 node 1 priority 100
+
+#redundancy group for the data plane (interfaces)
+set chassis cluster reth-count 2
+set chassis cluster redundancy-group 1 node 0 priority 200
+set chassis cluster redundancy-group 1 node 1 priority 100
+set chassis cluster redundancy-group 1 preempt
+set chassis cluster redundancy-group 2 node 0 priority 100
+set chassis cluster redundancy-group 2 node 1 priority 200
+set chassis cluster redundancy-group 2 preempt
+
+#create reth interfaces
+set interfaces reth0 redundant-ether-options redundancy-group 1
+set interfaces ge-0/0/0 gigether-options redundant-parent reth0
+set interfaces ge-7/0/0 gigether-options redundant-parent reth0
+set interfaces reth1 redundant-ether-options redundancy-group 2
+set interfaces ge-0/0/1 gigether-options redundant-parent reth1
+set interfaces ge-7/0/1 gigether-options redundant-parent reth1
+
+#configure rg failover
+set chassis cluster redundancy-group 1 interface-monitor ge-0/0/0 weight 255 
+set chassis cluster redundancy-group 1 interface-monitor ge-7/0/0 weight 255 
+set chassis cluster redundancy-group 2 interface-monitor ge-0/0/1 weight 255 
+set chassis cluster redundancy-group 2 interface-monitor ge-7/0/1 weight 255
+set chassis cluster control-link-recovery
+
+#configure reth interfaces
+set interfaces reth0 unit 0 description P2P-1
+set interfaces reth0 unit 0 family inet address 10.50.120.2/30  
+set interfaces reth1 unit 0 description P2P-2
+set interfaces reth1 unit 0 family inet address 10.50.120.6/30  
+
+#LACP
+set interfaces reth0 redundant-ether-options lacp active
+set interfaces reth0 redundant-ether-options lacp periodic fast
+set interfaces reth1 redundant-ether-options lacp active
+set interfaces reth1 redundant-ether-options lacp periodic fast
+
+#security zones
+set security zones security-zone trust interfaces reth0.0    
+set security zones security-zone trust interfaces reth1.0  
+set security zones security-zone trust host-inbound-traffic system-services all 
+
+#new ISP security zones
+set security zones security-zone ISP1-untrust screen untrust-screen
+set security zones security-zone ISP1-untrust host-inbound-traffic system-services all
+set security zones security-zone ISP2-untrust screen untrust-screen
+set security zones security-zone ISP2-untrust host-inbound-traffic system-services all
+
+set security policies from-zone trust to-zone ISP1-untrust policy default-permit match source-address any
+set security policies from-zone trust to-zone ISP1-untrust policy default-permit match destination-address any
+set security policies from-zone trust to-zone ISP1-untrust policy default-permit match application any
+set security policies from-zone trust to-zone ISP1-untrust policy default-permit then permit
+set security policies from-zone trust to-zone ISP2-untrust policy default-permit match source-address any
+set security policies from-zone trust to-zone ISP2-untrust policy default-permit match destination-address any
+set security policies from-zone trust to-zone ISP2-untrust policy default-permit match application any
+set security policies from-zone trust to-zone ISP2-untrust policy default-permit then permit
+
+
+#configure WAN interfaces
+set interfaces ge-0/0/2 unit 0 description ISP-1
+set interfaces ge-0/0/2 unit 0 family inet address 1.1.1.1/24
+set security zones security-zone ISP1-untrust interfaces ge-0/0/2.0
+set interfaces ge-7/0/2 unit 0 description ISP-2
+set interfaces ge-7/0/2 unit 0 family inet address 2.2.2.2/24
+set security zones security-zone ISP2-untrust interfaces ge-7/0/2.0
+
+
+#configure routing instances
+set routing-instances ISP1 instance-type virtual-router
+set routing-instances ISP1 interface ge-0/0/2.0
+set routing-instances ISP1 routing-options static route 0.0.0.0/0 next-hop 1.1.1.10
+set routing-instances ISP2 instance-type virtual-router
+set routing-instances ISP2 interface ge-7/0/2.0
+set routing-instances ISP2 routing-options static route 0.0.0.0/0 next-hop 2.2.2.10
+
+
+#configure tunnels
+set interfaces st0 unit 0 family inet mtu 1500 address 169.254.1.2/30
+set interfaces st0 unit 1 family inet mtu 1500 address 169.254.2.2/30
+
+set security flow tcp-mss ipsec-vpn mss 1360
+set security ike policy phase1-policy mode main proposal-set standard pre-shared-key ascii-text 1234
+set security ike gateway primary-gw ike-policy phase1-policy address 3.3.3.3 external-interface ge-0/0/2.0
+set security ike gateway secondary-gw ike-policy phase1-policy address 3.3.3.3 external-interface ge-7/0/2.0 
+set security ipsec policy phase2-policy proposal-set standard
+set security ipsec vpn primary-vpn bind-interface st0.0 ike gateway primary-gw ipsec-policy phase2-policy
+set security ipsec vpn primary-vpn bind-interface st0.0 establish-tunnels immediately
+set security ipsec vpn secondary-vpn bind-interface st0.1 ike gateway secondary-gw ipsec-policy phase2-policy
+set security ipsec vpn secondary-vpn bind-interface st0.1 establish-tunnels immediately
+
+set security zones security-zone trust interfaces st0.0
+set security zones security-zone trust interfaces st0.1
+
+#configure loopbacks and router id
+set groups node0 interfaces lo0 unit 0 family inet address 10.50.0.5/32
+set groups node1 interfaces lo0 unit 0 family inet address 10.50.0.6/32
+set security zones security-zone trust interfaces lo0.0
+set groups node0 routing-options router-id 10.50.0.5/32
+set groups node1 routing-options router-id 10.50.0.6/32
+
+
+# #Configure Probes
+# set routing-instances ISP1 routing-options static route 9.9.9.9/32 next-hop 1.1.1.10
+# set routing-instances ISP2 routing-options static route 9.9.9.9/32 next-hop 2.2.2.10
+
+set policy-options policy-statement IMPORT-TO-INET0 term FROM-ISP1 from instance ISP1
+set policy-options policy-statement IMPORT-TO-INET0 term FROM-ISP1 from protocol static
+set policy-options policy-statement IMPORT-TO-INET0 term FROM-ISP1 from route-filter 0.0.0.0/0 exact
+set policy-options policy-statement IMPORT-TO-INET0 term FROM-ISP1 then accept
+set policy-options policy-statement IMPORT-TO-INET0 term FROM-ISP2 from instance ISP2
+set policy-options policy-statement IMPORT-TO-INET0 term FROM-ISP2 from protocol static
+set policy-options policy-statement IMPORT-TO-INET0 term FROM-ISP2 from route-filter 0.0.0.0/0 exact
+set policy-options policy-statement IMPORT-TO-INET0 term FROM-ISP2 then accept
+set policy-options policy-statement IMPORT-TO-INET0 term FINAL then reject
+set routing-options instance-import IMPORT-TO-INET0
+
+#configure source nat
+set security nat source interface enhanced-port-overloading-algorithm
+set security nat source rule-set ISP1 from zone trust
+set security nat source rule-set ISP1 to zone ISP1-untrust
+set security nat source rule-set ISP1 rule OFFICE-ISP1 match source address 10.50.0.0/16
+set security nat source rule-set ISP1 rule OFFICE-ISP1 then source-nat interface
+set security nat source rule-set ISP2 from zone trust
+set security nat source rule-set ISP2 to zone ISP2-untrust
+set security nat source rule-set ISP2 rule OFFICE-ISP2 match source address 10.50.0.0/16
+set security nat source rule-set ISP2 rule OFFICE-ISP2 then source-nat interface
+
+#configure ospf to switch
+set protocols ospf area 0.0.0.50 stub
+set protocols ospf area 0.0.0.50 interface reth0.0 metric 10
+set protocols ospf area 0.0.0.50 interface reth1.0 metric 10
+set protocols ospf area 0.0.0.50 stub default-metric 10
+set protocols ospf area 0.0.0.50 area-range 10.50.0.0/16
+set protocols ospf area 0.0.0.50 stub no-summaries 
+set security zones security-zone trust interfaces reth0.0 host-inbound-traffic protocols ospf
+set security zones security-zone trust interfaces reth1.0 host-inbound-traffic protocols ospf
+
+
+#configure ospf over tunnels
+set protocols ospf area 0.0.0.0 interface st0.0 metric 10
+set protocols ospf area 0.0.0.0 interface st0.1 metric 10
+set protocols ospf area 0.0.0.0 interface st0.0 interface-type p2p
+set protocols ospf area 0.0.0.0 interface st0.1 interface-type p2p
+
+set interfaces st0 unit 0 family inet mtu 1400
+set interfaces st0 unit 0 point-to-point
+set interfaces st0 unit 1 family inet mtu 1400
+set interfaces st0 unit 1 point-to-point
+set security zones security-zone trust interfaces st0.0 host-inbound-traffic protocols ospf
+set security zones security-zone trust interfaces st0.1 host-inbound-traffic protocols ospf
+
+#fxp0 stuff
+set system management-instance
+set routing-instances mgmt_junos description OOB-MGMT
+set routing-instances mgmt_junos routing-options static route 0.0.0.0/0 next-hop 172.30.50.1
+
+########################################################################333
+#Rebuild to add a separate VPN routing instance
+#static DNS (for testing)
+#set system static-host-mapping *.eric.com inet 9.9.9.9
+#set security address-book global address TUNNEL-REDIRECT dns-name *.eric.com
+
+delete security zones security-zone trust interfaces st0.0
+delete security zones security-zone trust interfaces st0.1
+
+set security zones security-zone VPN tcp-rst
+set security zones security-zone VPN host-inbound-traffic system-services all
+set security zones security-zone VPN interfaces st0.0 host-inbound-traffic protocols ospf
+set security zones security-zone VPN interfaces st0.1 host-inbound-traffic protocols ospf
+
+set security policies from-zone VPN to-zone trust policy default-permit match source-address any
+set security policies from-zone VPN to-zone trust policy default-permit match destination-address any
+set security policies from-zone VPN to-zone trust policy default-permit match application any
+set security policies from-zone VPN to-zone trust policy default-permit then permit
+set security policies from-zone trust to-zone VPN policy default-permit match source-address any
+set security policies from-zone trust to-zone VPN policy default-permit match destination-address any
+set security policies from-zone trust to-zone VPN policy default-permit match application any
+set security policies from-zone trust to-zone VPN policy default-permit then permit
+
+delete protocols ospf area 0.0.0.0 interface st0.0
+delete protocols ospf area 0.0.0.0 interface st0.1
+delete protocols ospf area 0.0.0.0 interface lo0.0
+
+set routing-instances VPN instance-type virtual-router
+set routing-instances VPN interface st0.0
+set routing-instances VPN interface st0.1
+
+set routing-instances VPN protocols ospf area 0.0.0.0 interface st0.0 interface-type p2p
+set routing-instances VPN protocols ospf area 0.0.0.0 interface st0.0 metric 10
+set routing-instances VPN protocols ospf area 0.0.0.0 interface st0.1 interface-type p2p
+set routing-instances VPN protocols ospf area 0.0.0.0 interface st0.1 metric 10
+set routing-instances VPN protocols ospf area 0.0.0.0 interface lo0.0 passive
+
+delete protocols ospf area 0.0.0.50 stub
+delete protocols ospf area 0.0.0.50 area-range 10.50.0.0/16
+# set protocols ospf area 0.0.0.50 interface reth0.0 interface-type p2p
+# set protocols ospf area 0.0.0.50 interface reth0.0 metric 10
+# set protocols ospf area 0.0.0.50 interface reth1.0 interface-type p2p
+# set protocols ospf area 0.0.0.50 interface reth1.0 metric 10
+set protocols ospf area 0.0.0.50 interface lo0.0
+
+set routing-instances VPN routing-options static route 10.50.0.0/16 next-table inet.0
+set policy-options policy-statement ospf-0-in term OFFICE-ROUTE from protocol static
+set policy-options policy-statement ospf-0-in term OFFICE-ROUTE from route-filter 10.50.0/16 exact
+set policy-options policy-statement ospf-0-in term OFFICE-ROUTE then accept
+set policy-options policy-statement ospf-0-in term FINAL then reject
+set routing-instances VPN protocols ospf export ospf-0-in
+
+set routing-instances VPN routing-options static route 10.0.0.0/8 discard
+set policy-options policy-statement IMPORT-TO-INET0 term FROM-VPN from instance VPN
+set policy-options policy-statement IMPORT-TO-INET0 term FROM-VPN from protocol static
+set policy-options policy-statement IMPORT-TO-INET0 term FROM-VPN from route-filter 10.0.0.0/8 exact
+set policy-options policy-statement IMPORT-TO-INET0 term FROM-VPN then accept
+insert policy-options policy-statement IMPORT-TO-INET0 term FROM-VPN before term FINAL
