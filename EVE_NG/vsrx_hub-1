@@ -47,3 +47,12 @@ set policy-options policy-statement static-to-ospf term 1 from route-filter 10.1
 set policy-options policy-statement static-to-ospf term 1 then accept
 set policy-options policy-statement static-to-ospf term FINAL then reject
 set protocols ospf export static-to-ospf
+
+set routing-options static route 10.0.0.0/8 next-hop 10.150.1.10
+set policy-options policy-statement static-to-ospf term 2 from protocol static
+set policy-options policy-statement static-to-ospf term 1 from route-filter 10.0.0.0/8 orlonger
+set policy-options policy-statement static-to-ospf term 1 then accept
+
+#enable load balancing
+set policy-options policy-statement lb-policy then load-balance per-packet
+set routing-options forwarding-table export lb-policy
