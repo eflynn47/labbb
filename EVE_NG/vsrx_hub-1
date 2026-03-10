@@ -56,3 +56,18 @@ set policy-options policy-statement static-to-ospf term 1 then accept
 #enable load balancing
 set policy-options policy-statement lb-policy then load-balance per-packet
 set routing-options forwarding-table export lb-policy
+
+#advertise default to VPN
+set policy-options policy-statement static-to-ospf term 2 from protocol static
+set policy-options policy-statement static-to-ospf term 2 from route-filter 0.0.0.0/0 exact
+set policy-options policy-statement static-to-ospf term 2 then accept
+
+#NAT the outside interface to test VPN default routing
+set security nat source interface enhanced-port-overloading-algorithm
+set security nat source rule-set ISP1 from zone trust
+set security nat source rule-set ISP1 to zone untrust
+set security nat source rule-set ISP1 rule INTERNAL match source address 10.0.0.0/8
+set security nat source rule-set ISP1 rule INTERNAL then source-nat interface
+set security nat source rule-set ISP1 rule VPN match source address 169.0.0.0/8
+set security nat source rule-set ISP1 rule VPN then source-nat interface
+
