@@ -249,3 +249,38 @@ set routing-instances ISP1 interface ge-7/0/2.0
 set security zones security-zone ISP1-untrust interfaces ge-7/0/2.0
 set routing-instances ISP1 routing-options static route 0.0.0.0/0 next-hop 2.2.2.10
 set routing-instances ISP1 routing-options forwarding-table export lb-policy
+
+set policy-options policy-statement ospf-50-in term 2 from protocol static
+set policy-options policy-statement ospf-50-in term 2 from route-filter 0.0.0.0/0 exact
+set policy-options policy-statement ospf-50-in term 2 then accept
+
+set routing-options static route 0.0.0.0/0 next-table ISP1.inet.0
+set routing-options instance-import IMPORT-TO-INET0
+set routing-options forwarding-table export lb-policy
+
+##AppID and APBR
+#set services application-identification custom-application KBAPP ssl-server-name "(^kbapp\.com$)|(^.*\.kbapp\.com$)"
+#set security address-book global address VPN-REROUTE dns-name kbapp.com
+# set security advance-policy-based-routing rule KBAPP match from-zone trust
+# set security advance-policy-based-routing rule KBAPP match destination-address VPN-REROUTE
+# set security advance-policy-based-routing rule KBAPP then routing-instance VPN
+# set security advance-policy-based-routing interface reth0.0
+# set security advance-policy-based-routing interface reth1.0
+
+set security utm custom-objects url-pattern vpn-url-list value http://*.kbapp.com
+set security utm custom-objects custom-url-category cust-permit-list value vpn-url-list
+set security utm feature-profile web-filtering juniper-local profile P1 category cust-permit-list action permit  
+
+set routing-instances RI2 instance-type forwarding
+set routing-instances RI2 routing options static route 0.0.0.0/0 next-table VPN.inet.0
+
+set routing-options interface-routes rib-group inet apbr_group1
+set routing-options rib-groups apbr_group1 import-rib [inet.0 RI2.inet.0]
+
+set security advance-policy-based-routing profile apbr-pr1 rule rule1 match category cust-permit-list
+set security advance-policy-based-routing profile apbr-pr1 rule rule1 then routing-instance RI2
+
+set security advance-policy-based-routing from-zone trust policy apbrpolicy1 match source-address any  
+set security advance-policy-based-routing from-zone trust policy apbrpolicy1 match destination-address any  
+set security advance-policy-based-routing from-zone trust policy apbrpolicy1 match application any 
+set security advance-policy-based-routing from-zone trust policy apbrpolicy1 then application-services advance-policy-based-routing-profile apbr-pr1  
